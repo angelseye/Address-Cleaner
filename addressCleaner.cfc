@@ -55,33 +55,27 @@
 		<!--- ***** ARGUMENTS / VARIABLES ***** --->
 		<cfargument name="address" type="string" required="true" />
 		<cfscript>
-			var addressStruct = {};
 			var errors = [];
 			var newAddress = "";
 			//do some address parsing
-			var jGeoCoder = getPlugin("JavaLoader").setup([ExpandPath("plugins\addressCleaner\jgeocoder.jar")]);
-			var parser = getPlugin("JavaLoader").create("net.sourceforge.jgeocoder.us.AddressParser").parseAddress(arguments.address);
-			//if parsed correctly, do this...
-			if(structKeyExists(local,"parser")){
-				var addressStruct = cleanParserData(parser.toString());
-				//build new address...
-				if(arrayLen(errors) == 0){
-					newAddress &= (structKeyExists(addressStruct,'number')) ? addressStruct.number & ' ' : '';
-					newAddress &= (structKeyExists(addressStruct,'predir')) ? addressStruct.predir & ' ' : '';
-					newAddress &= (structKeyExists(addressStruct,'street')) ? addressStruct.street & ' ' : '';
-					newAddress &= (structKeyExists(addressStruct,'type')) ? addressStruct.type & ' ' : '';
-					newAddress &= (structKeyExists(addressStruct,'postdir')) ? addressStruct.postdir & ' ' : '';
-					newAddress &= (structKeyExists(addressStruct,'city')) ? addressStruct.city & ', ' : '';
-					newAddress &= (structKeyExists(addressStruct,'state')) ? addressStruct.state & ' ' : '';
-					newAddress &= (structKeyExists(addressStruct,'zip')) ? addressStruct.zip : '';
-				//...or return errors
-				}else{
-					newAddress = errors;
-				}
+			var addressStruct = parseAddress(arguments.address);
+			//build new address...
+			if(IsStruct(addressStruct)){
+				newAddress &= (structKeyExists(addressStruct,'number')) ? addressStruct.number & ' ' : '';
+				newAddress &= (structKeyExists(addressStruct,'predir')) ? addressStruct.predir & ' ' : '';
+				newAddress &= (structKeyExists(addressStruct,'street')) ? addressStruct.street & ' ' : '';
+				newAddress &= (structKeyExists(addressStruct,'type')) ? addressStruct.type & ' ' : '';
+				newAddress &= (structKeyExists(addressStruct,'postdir')) ? addressStruct.postdir & ' ' : '';
+				newAddress &= (structKeyExists(addressStruct,'city')) ? addressStruct.city & ', ' : '';
+				newAddress &= (structKeyExists(addressStruct,'state')) ? addressStruct.state & ' ' : '';
+				newAddress &= (structKeyExists(addressStruct,'zip')) ? addressStruct.zip : '';
+			//...or return errors
+			}else if(IsArray(addressStruct)){
+				newAddress = addressStruct;
 			//...else return error
 			}else{
-				ArrayAppend(errors,"Could not properly read an address. Please go back and be sure it is a valid and formatted address.");
-				newAddress = arguments.address;
+				ArrayAppend(errors,"Could not properly read an address. Please be sure it is a valid and legible U.S. address.");
+				newAddress = errors;
 			}
 			//return data
 			return newAddress;
@@ -91,7 +85,44 @@
 
 
 
+	<!--- getAddressStruct(): returns a struct of the parsed address parts --->
+	<cffunction name="getAddressStruct" access="public" returntype="any" output="false">
+		<!--- ***** ARGUMENTS / VARIABLES ***** --->
+		<cfargument name="address" type="string" required="true" />
+		<cfscript>
+			var errors = [];
+			//do some address parsing
+			var addressStruct = parseAddress(arguments.address);
+			//return data
+			return addressStruct;
+		</cfscript>
+	</cffunction>
+
+
+
+
 <!--- ********************** PRIVATE METHODS ********************** --->
+
+
+	<!--- parseAddress(): parse the address and return a struct of address parts --->
+	<cffunction name="parseAddress" access="private" returntype="any" output="false">
+		<!--- ***** ARGUMENTS / VARIABLES ***** --->
+		<cfargument name="address" type="string" required="true" />
+		<cfscript>
+			var jGeoCoder = getPlugin("JavaLoader").setup([ExpandPath("plugins\addressCleaner\jgeocoder.jar")]);
+			var parser = getPlugin("JavaLoader").create("net.sourceforge.jgeocoder.us.AddressParser").parseAddress(arguments.address);
+			//if parsed correctly, do this...
+			if(structKeyExists(local,"parser")){
+				var addressStruct = cleanParserData(parser.toString());
+			}else{
+				var addressStruct = ["Unable to parse your address. Please be sure it is a valid and legible U.S. address."];
+			}
+			//return data
+			return addressStruct;
+		</cfscript>
+	</cffunction>
+
+
 
 
 	<!--- cleanParserData(): cleans up the returned parsing data (may be my limited understanding of java and the jgeocoder) --->
@@ -112,28 +143,6 @@
 			return returnObj;
 		</cfscript>
 	</cffunction>
-
-
-	<!--- getZip(): tries to get the zip code from an address string --->
-	<cffunction name="getZip" access="private" returntype="any" output="false">
-		<!--- ***** ARGUMENTS / VARIABLES ***** --->
-		<cfargument name="address" type="string" required="true" />
-		<cfscript>
-			var returnObj = '';
-			var regex = "\d{5}(-\d{4})?";
-			var match = REMatch(regex,arguments.address);
-			//do errors if no match
-			if(arrayLen(match) < 1){
-				returnObj = ["There does not appear to be a valid U.S. Zip Code in this address."];
-			}else{
-				returnObj = match[1];
-			}
-			//return data
-			return returnObj;
-		</cfscript>
-	</cffunction>
-
-
 
 
 </cfcomponent>
