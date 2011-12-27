@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: jliang
+Build-Jdk: 1.6.0_06
+Main-Class: net.sourceforge.jgeocoder.test.JGeocoderParserTestClient
+
